@@ -1,90 +1,77 @@
-VERSION := $(patsubst "%",%,$(lastword $(shell grep "\tVersion" version.go)))
+NAME := k8sec
+VERSION := v0.6.0
 REVISION := $(shell git rev-parse --short HEAD)
-BUILDTIME := $(shell date '+%Y/%m/%d %H:%M:%S %Z')
-GOVERSION := $(subst go version ,,$(shell go version))
 
-BINARYDIR := bin
-BINARY := k8sec
+SRCS    := $(shell find . -type f -name '*.go')
+LDFLAGS := -ldflags="-s -w -X \"github.com/dtan4/k8sec/version.Version=$(VERSION)\" -X \"github.com/dtan4/k8sec/version.Revision=$(REVISION)\" -extldflags -static"
 
-LDFLAGS := -ldflags="-w -X \"main.GitCommit=$(REVISION)\" -X \"main.BuildTime=$(BUILDTIME)\" -X \"main.GoVersion=$(GOVERSION)\""
+DIST_DIRS := find * -type d -exec
 
-SOURCEDIR := .
-SOURCES := $(shell find $(SOURCEDIR) -name '*.go' -type f)
+DOCKER_REPOSITORY := quay.io
+DOCKER_IMAGE_NAME := $(DOCKER_REPOSITORY)/dtan4/k8sec
+DOCKER_IMAGE_TAG  ?= latest
+DOCKER_IMAGE      := $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
 
-GHR := ghr
-GHR_VERSION := v0.4.0
+.DEFAULT_GOAL := bin/$(NAME)
 
-GLIDE := glide
-GLIDE_VERSION := 0.10.2
+bin/$(NAME): $(SRCS)
+	go build $(LDFLAGS) -o bin/$(NAME)
 
-DISTDIR := dist
+.PHONY: ci-docker-release
+ci-docker-release: docker-build
+	@docker login -u="$(DOCKER_QUAY_USERNAME)" -p="$(DOCKER_QUAY_PASSWORD)" $(DOCKER_REPOSITORY)
+	docker push $(DOCKER_IMAGE)
 
-GITHUB_USERNAME := dtan4
-
-.DEFAULT_GOAL := $(BINARYDIR)/$(BINARY)
-
-$(BINARYDIR)/$(GHR):
-ifeq ($(shell uname),Darwin)
-	curl -fL https://github.com/tcnksm/ghr/releases/download/$(GHR_VERSION)/ghr_$(GHR_VERSION)_darwin_amd64.zip -o ghr.zip
-	unzip ghr.zip
-	if [ ! -d $(BINARYDIR) ]; then mkdir $(BINARYDIR); fi
-	mv ./ghr $(BINARYDIR)/$(GHR)
-	rm ./ghr.zip
-else
-	curl -fL https://github.com/tcnksm/ghr/releases/download/$(GHR_VERSION)/ghr-$(GHR_VERSION)-linux_amd64.zip -o ghr.zip
-	unzip ghr.zip
-	if [ ! -d $(BINARYDIR) ]; then mkdir $(BINARYDIR); fi
-	mv ./ghr $(BINARYDIR)/$(GHR)
-	rm ./ghr.zip
-endif
-
-$(BINARYDIR)/$(GLIDE):
-ifeq ($(shell uname),Darwin)
-	curl -fL https://github.com/Masterminds/glide/releases/download/$(GLIDE_VERSION)/glide-$(GLIDE_VERSION)-darwin-amd64.zip -o glide.zip
-	unzip glide.zip
-	if [ ! -d $(BINARYDIR) ]; then mkdir $(BINARYDIR); fi
-	mv ./darwin-amd64/glide $(BINARYDIR)/$(GLIDE)
-	rm -fr ./darwin-amd64
-	rm ./glide.zip
-else
-	curl -fL https://github.com/Masterminds/glide/releases/download/$(GLIDE_VERSION)/glide-$(GLIDE_VERSION)-linux-amd64.zip -o glide.zip
-	unzip glide.zip
-	if [ ! -d $(BINARYDIR) ]; then mkdir $(BINARYDIR); fi
-	mv ./linux-amd64/glide $(BINARYDIR)/$(GLIDE)
-	rm -fr ./linux-amd64
-	rm ./glide.zip
-endif
-
-$(BINARYDIR)/$(BINARY): $(SOURCES)
-	go build $(LDFLAGS) -o $(BINARYDIR)/$(BINARY)
-
-build-all:
-	go get github.com/mitchellh/gox
-	gox -verbose \
-		$(LDFLAGS) \
-		-os="linux darwin windows " \
-		-arch="amd64 386" \
-		-output="$(DISTDIR)/{{.OS}}-{{.Arch}}/{{.Dir}}" .
-
+.PHONY: clean
 clean:
-	rm -fr $(BINARYDIR)
-	rm -fr $(DISTDIR)
+	rm -rf bin/*
+	rm -rf dist/*
+	rm -rf vendor/*
 
-deps: $(BINARYDIR)/$(GLIDE)
-	$(BINARYDIR)/$(GLIDE) install
+.PHONY: cross-build
+cross-build:
+	for os in darwin linux windows; do \
+		for arch in amd64 386; do \
+			GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 go build -a -tags netgo -installsuffix netgo $(LDFLAGS) -o dist/$$os-$$arch/$(NAME); \
+		done; \
+	done
 
-install: $(BINARYDIR)/$(BINARY)
-	go install
+.PHONY: deps
+deps: glide
+	glide install
 
-package-all:
-	cd $(DISTDIR) \
-	&& find * -type d | xargs -I {} tar czf $(BINARY)-$(VERSION)-{}.tar.gz {} \
-	&& find * -type d | xargs -I {} zip -r $(BINARY)-$(VERSION)-{}.zip {}
+.PHONY: dist
+dist:
+	cd dist && \
+	$(DIST_DIRS) cp ../LICENSE {} \; && \
+	$(DIST_DIRS) cp ../README.md {} \; && \
+	$(DIST_DIRS) tar -zcf $(NAME)-$(VERSION)-{}.tar.gz {} \; && \
+	$(DIST_DIRS) zip -r $(NAME)-$(VERSION)-{}.zip {} \; && \
+	cd ..
 
-release-all: build-all package-all $(BINARYDIR)/$(GHR)
-	$(BINARYDIR)/$(GHR) -u $(GITHUB_USERNAME) --replace $(VERSION) $(DISTDIR)/
+.PHONY: docker-build
+docker-build:
+	docker build -t $(DOCKER_IMAGE) .
 
+.PHONY: fast
+fast:
+	go build $(LDFLAGS) -o bin/$(NAME)
+
+.PHONY: glide
+glide:
+ifeq ($(shell command -v glide 2> /dev/null),)
+	curl https://glide.sh/get | sh
+endif
+
+.PHONY: install
+install:
+	go install $(LDFLAGS)
+
+.PHONY: release
+release:
+	git tag $(VERSION)
+	git push origin $(VERSION)
+
+.PHONY: test
 test:
-	go test -v .
-
-.PHONY: build-all clean deps install package-all release-all test
+	go test -cover -v `glide novendor`

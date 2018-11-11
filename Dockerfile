@@ -1,11 +1,16 @@
-FROM alpine:3.4
+FROM golang:1.10.3 AS builder
 
-ENV K8SEC_VERSION v0.1.0
+WORKDIR /go/src/github.com/dtan4/k8sec
+COPY . /go/src/github.com/dtan4/k8sec
 
-RUN apk add --no-cache --update ca-certificates unzip wget \
-    && wget -qO /k8sec.zip "https://github.com/dtan4/k8sec/releases/download/${K8SEC_VERSION}/k8sec-${K8SEC_VERSION}-linux-amd64.zip" \
-    && unzip /k8sec.zip -d /bin \
-    && apk del --purge unzip wget \
-    && rm -rf /k8sec.zip
+RUN make deps
 
-ENTRYPOINT ["/bin/linux-amd64/k8sec"]
+RUN CGO_ENABLED=0 make
+
+FROM alpine:3.8
+
+RUN apk add --no-cache --update ca-certificates
+
+COPY --from=builder /go/src/github.com/dtan4/k8sec/bin/k8sec /k8sec
+
+ENTRYPOINT ["/k8sec"]

@@ -1,15 +1,60 @@
 # k8sec
 
-CLI tool to manage [Kubernetes Secrets](http://kubernetes.io/docs/user-guide/secrets/) easily.
+[![Build Status](https://travis-ci.org/dtan4/k8sec.svg?branch=master)](https://travis-ci.org/dtan4/k8sec)
+[![GitHub release](https://img.shields.io/github/release/dtan4/k8sec.svg)](https://github.com/dtan4/k8sec/releases)
+[![Docker Repository on Quay](https://quay.io/repository/dtan4/k8sec/status "Docker Repository on Quay")](https://quay.io/repository/dtan4/k8sec)
+
+CLI tool to manage [Kubernetes Secrets](http://kubernetes.io/docs/user-guide/secrets/) easily
+
+## Requirements
+
+Kubernetes 1.3 or above
+
+## Installation
+
+### Using Homebrew (OS X only)
+
+Formula is available at [dtan4/homebrew-dtan4](https://github.com/dtan4/homebrew-tools).
+
+```bash
+$ brew tap dtan4/tools
+$ brew install k8sec
+```
+
+### Precompiled binary
+
+Precompiled binaries for Windows, OS X, Linux are available at [Releases](https://github.com/dtan4/k8sec/releases).
+
+### From source
+
+```bash
+$ go get -d github.com/dtan4/k8sec
+$ cd $GOPATH/src/github.com/dtan4/k8sec
+$ make deps
+$ make install
+```
+
+### Docker image
+
+Docker image is available at [`quay.io/dtan4/k8sec`](https://quay.io/repository/dtan4/k8sec).
 
 ## Usage
+
+### Global options
+
+|Option|Description|Required|Default|
+|---------|-----------|-------|-------|
+|`--context=CONTEXT`|Kubernetes context|||
+|`--kubeconfig=KUBECONFIG`|Path of kubeconfig||`~/.kube/config`|
+|`-n`, `--namespace=NAMESPACE`|Kubernetes namespace||`default`|
+|`-h`, `-help`|Print command line usage|||
 
 ### `k8sec list`
 
 List secrets
 
-``` bash
-$ k8sec list [--base64] [--kubeconfig KUBECONFIG] [--namespace NAMESPACE] [NAME]
+```bash
+$ k8sec list [--base64] [NAME]
 
 # Example
 $ k8sec list rails
@@ -26,30 +71,31 @@ rails   Opaque  database-url    cG9zdGdyZXM6Ly9leGFtcGxlLmNvbTo1NDMyL2RibmFtZQ==
 
 Set secrets
 
-``` bash
-$ k8sec set [--base64] [--kubeconfig KUBECONFIG] [--namespace NAMESPACE] NAME KEY1=VALUE1 KEY2=VALUE2
+```bash
+$ k8sec set [--base64] NAME KEY1=VALUE1 [KEY2=VALUE2 ...]
 
-# Example
 $ k8sec set rails rails-env=production
 rails
 
-# Pass base64-encoded value
-$ echo dtan4 | base64
-ZHRhbjQK
-$ k8sec set --base64 rails foo=ZHRhbjQK
+# Set base64-encoded value
+$ echo -n dtan4 | base64
+ZHRhbjQ=
+$ k8sec set --base64 rails foo=ZHRhbjQ=
 rails
+
+# Result
 $ k8sec list rails
 NAME    TYPE    KEY             VALUE
 rails   Opaque  database-url    "postgres://example.com:5432/dbname"
-rails   Opaque  foo             "dtan4\n"
+rails   Opaque  foo             "dtan4"
 ```
 
 ### `k8sec unset`
 
 Unset secrets
 
-``` bash
-$ k8sec unset [--kubeconfig KUBECONFIG] [--namespace NAMESPACE] NAME KEY1 KEY2
+```bash
+$ k8sec unset NAME KEY1 KEY2...
 
 # Example
 $ k8sec unset rails rails-env
@@ -57,10 +103,10 @@ $ k8sec unset rails rails-env
 
 ### `k8sec load`
 
-Load from dotenv (key=value) format text
+Load secrets from dotenv (key=value) format text
 
-``` bash
-$ k8sec load [--kubeconfig KUBECONFIG] [--namespace NAMESPACE] [-f FILENAME] NAME
+```bash
+$ k8sec load [-f FILENAME] NAME
 
 # Example
 $ cat .env
@@ -71,45 +117,26 @@ $ k8sec load -f .env rails
 $ cat .env | k8sec load rails
 ```
 
-### `k8sec save`
+### `k8sec dump`
 
-Save as dotenv (key=value) format
+Dump secrets as dotenv (key=value) format
 
-``` bash
-$ k8sec save [--kubeconfig KUBECONFIG] [--namespace NAMESPACE] [-f FILENAME] [NAME]
+```bash
+$ k8sec dump [-f FILENAME] [NAME]
 
 # Example
-$ k8sec save rails
+$ k8sec dump rails
 database-url="postgres://example.com:5432/dbname"
 
 # Save as .env
-$ k8sec save -f .env rails
+$ k8sec dump -f .env rails
 $ cat .env
 database-url="postgres://example.com:5432/dbname"
 ```
 
-## Install
-
-To install, use `go get`:
-
-```bash
-$ go get -d github.com/dtan4/k8sec
-
-# or
-
-$ cd $GOPATH/src/github.com/dtan4/k8sec
-$ make deps
-$ make install
-```
-
-## Development
-
-```bash
-$ make deps
-$ make
-```
-
 ## Contribution
+
+Go 1.8 or above is required.
 
 1. Fork ([https://github.com/dtan4/k8sec/fork](https://github.com/dtan4/k8sec/fork))
 1. Create a feature branch

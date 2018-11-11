@@ -1,8 +1,8 @@
 *.test
 
-/bin
-/vendor
-/dist
+bin
+vendor
+dist
 
 # Created by https://www.gitignore.io/api/go
 
@@ -21,8 +21,12 @@
 *.out
 
 ### Go Patch ###
-/vendor/
-/Godeps/
+vendor/
+Godeps/
 
 
 # End of https://www.gitignore.io/api/go
+
+.git
+.gitignore
+README.md
