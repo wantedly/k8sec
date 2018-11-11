@@ -15,7 +15,8 @@ import (
 )
 
 var listOpts = struct {
-	base64encode bool
+	base64encode  bool
+	allnamespaces bool
 }{}
 
 // listCmd represents the list command
@@ -38,14 +39,15 @@ rails   Opaque  database-url    cG9zdGdyZXM6Ly9leGFtcGxlLmNvbTo1NDMyL2RibmFtZQ==
 }
 
 type Secret struct {
-	Name  string
-	Type  string
-	Key   string
-	Value string
+	Namespace string
+	Name      string
+	Type      string
+	Key       string
+	Value     string
 }
 
 func doList(cmd *cobra.Command, args []string) error {
-	if len(args) > 1 {
+	if len(args) > 2 {
 		return errors.New("Too many arguments.")
 	}
 
@@ -58,13 +60,15 @@ func doList(cmd *cobra.Command, args []string) error {
 
 	if rootOpts.namespace != "" {
 		namespace = rootOpts.namespace
+	} else if listOpts.allnamespaces {
+		namespace = ""
 	} else {
 		namespace = k8sclient.DefaultNamespace()
 	}
 
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 0, 8, 0, '\t', 0)
-	fmt.Fprintln(w, strings.Join([]string{"NAME", "TYPE", "KEY", "VALUE"}, "\t"))
+	fmt.Fprintln(w, strings.Join([]string{"NAMESPACE", "NAME", "TYPE", "KEY", "VALUE"}, "\t"))
 
 	var v string
 
@@ -84,10 +88,11 @@ func doList(cmd *cobra.Command, args []string) error {
 			}
 
 			secrets = append(secrets, Secret{
-				Name:  secret.Name,
-				Type:  string(secret.Type),
-				Key:   key,
-				Value: v,
+				Namespace: secret.Namespace,
+				Name:      secret.Name,
+				Type:      string(secret.Type),
+				Key:       key,
+				Value:     v,
 			})
 		}
 
@@ -128,17 +133,18 @@ func doList(cmd *cobra.Command, args []string) error {
 
 			for _, kv := range kvs {
 				secrets = append(secrets, Secret{
-					Name:  secret.Name,
-					Type:  string(secret.Type),
-					Key:   kv.k,
-					Value: kv.v,
+					Namespace: secret.Namespace,
+					Name:      secret.Name,
+					Type:      string(secret.Type),
+					Key:       kv.k,
+					Value:     kv.v,
 				})
 			}
 		}
 	}
 
 	for _, secret := range secrets {
-		fmt.Fprintln(w, strings.Join([]string{secret.Name, secret.Type, secret.Key, secret.Value}, "\t"))
+		fmt.Fprintln(w, strings.Join([]string{secret.Namespace, secret.Name, secret.Type, secret.Key, secret.Value}, "\t"))
 	}
 
 	w.Flush()
@@ -150,4 +156,5 @@ func init() {
 	RootCmd.AddCommand(listCmd)
 
 	listCmd.Flags().BoolVar(&listOpts.base64encode, "base64", false, "Show values as base64-encoded string")
+	listCmd.Flags().BoolVar(&listOpts.allnamespaces, "all-namespaces", false, "Show values in All Namespaces")
 }
