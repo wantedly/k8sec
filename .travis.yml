@@ -6,7 +6,9 @@ cache:
   directories:
     - vendor
 go:
-  - '1.10.3'
+  - '1.12'
+env:
+  - GO111MODULE=on
 before_install:
   - sudo apt-get update -q
   - mkdir -p $GOPATH/bin
