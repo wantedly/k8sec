@@ -1,11 +1,10 @@
-FROM golang:1.10.3 AS builder
+FROM golang:1.12 AS builder
 
 WORKDIR /go/src/github.com/wantedly/k8sec
 COPY . /go/src/github.com/wantedly/k8sec
 
-RUN make deps
-
-RUN CGO_ENABLED=0 make
+ENV CGO_ENABLED=0 GO111MODULE=on
+RUN make
 
 FROM alpine:3.8
 
