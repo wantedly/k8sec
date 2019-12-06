@@ -1,3 +1,15 @@
+# [v0.8.0](https://github.com/dtan4/k8sec/releases/tag/v0.8.0) (2019-12-06)
+
+## Features
+
+- [Add all-namespace option](https://github.com/wantedly/k8sec/pull/7)
+
+## Others
+
+- [Use go mod instead of glide](https://github.com/wantedly/k8sec/pull/4)
+- [Fix Dockerfile](https://github.com/wantedly/k8sec/pull/5)
+- [Bump github.com/pkg/errors from 0.8.0 to 0.8.1](https://github.com/wantedly/k8sec/pull/6)
+
 # [v0.7.0](https://github.com/dtan4/k8sec/releases/tag/v0.7.0) (2019-04-09)
 
 ## Features
