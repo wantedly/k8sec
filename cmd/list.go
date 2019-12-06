@@ -47,7 +47,7 @@ type Secret struct {
 }
 
 func doList(cmd *cobra.Command, args []string) error {
-	if len(args) > 2 {
+	if len(args) > 1 {
 		return errors.New("Too many arguments.")
 	}
 
