@@ -9,9 +9,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/wantedly/k8sec/k8s"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/wantedly/k8sec/k8s"
 )
 
 var listOpts = struct {
@@ -156,5 +156,5 @@ func init() {
 	RootCmd.AddCommand(listCmd)
 
 	listCmd.Flags().BoolVar(&listOpts.base64encode, "base64", false, "Show values as base64-encoded string")
-	listCmd.Flags().BoolVar(&listOpts.allnamespaces, "all-namespaces", false, "Show values in All Namespaces")
+	listCmd.Flags().BoolVarP(&listOpts.allnamespaces, "all-namespaces", "A", false, "Show values in All Namespaces")
 }
