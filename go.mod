@@ -23,7 +23,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v0.0.0-20180320133207-05fbef0ca5da // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
-	github.com/pkg/errors v0.9.0
+	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v0.0.0-20161222151250-de09d9ce07d0
 	github.com/spf13/pflag v0.0.0-20160915153101-c7e63cf4530b // indirect
 	github.com/stretchr/testify v1.3.0 // indirect
